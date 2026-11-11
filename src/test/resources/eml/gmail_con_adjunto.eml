@@ -1,0 +1,30 @@
+MIME-Version: 1.0
+From: Patricia Saucedo <patricia.saucedo@canal11.test>
+Date: Tue, 13 Oct 2026 13:10:00 -0400
+Message-ID: <CAadjunto123@mail.gmail.com>
+Subject: UPDMAT["2","listo","00:55","/media/2026/paro_final.mxf"]
+To: grupo14sa@tecnoweb.org.bo
+Content-Type: multipart/mixed; boundary="000000000000mixto"
+
+--000000000000mixto
+Content-Type: multipart/alternative; boundary="000000000000alterno"
+
+--000000000000alterno
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
+
+Material listo para emisión.
+
+--000000000000alterno
+Content-Type: text/html; charset="UTF-8"
+
+<div>Material listo para emisión.</div>
+
+--000000000000alterno--
+--000000000000mixto
+Content-Type: text/plain; charset="US-ASCII"; name="notas.txt"
+Content-Disposition: attachment; filename="notas.txt"
+Content-Transfer-Encoding: base64
+
+RXN0ZSBhZGp1bnRvIG5vIGVzIGVsIGN1ZXJwby4K
+--000000000000mixto--
