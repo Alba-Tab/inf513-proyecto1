@@ -1,0 +1,31 @@
+# Build
+target/
+
+# Secretos: solo se versiona config.example.properties
+config.properties
+
+# Ejecución
+*.log
+*.lock
+*.lck
+*.pid
+logs/
+# JDK portable (solo si se usa uno en la carpeta de la aplicación)
+jdk/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+nbproject/private/
+.settings/
+.classpath
+.project
+
+# Sistema
+.DS_Store
+
+# Archivos internos del grupo (reglas, avance y cambios): no se versionan
+CLAUDE.md
+ROADMAP.md
+CHANGELOG.md
