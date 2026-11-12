@@ -117,4 +117,28 @@ class ComandosProgramacionTest {
         contiene(p.texto(JEFE_PRENSA, "INSPRG[\"X\",\"telenovela\",\"\"]"), "Error: «tipo» debe ser noticiero, especial u otro");
         contiene(p.texto(PERIODISTA, "INSPRG[\"X\",\"otro\",\"\"]"), "Error: no tiene permiso para ejecutar INSPRG");
     }
+
+    // ------------------------------------------------------------------ plantillas y cortes
+
+    @Test
+    void lispla() {
+        contiene(p.texto(PRESENTADOR, "LISPLA[\"1\"]"), "Noticiero Central", "Bloques", "Cortes comerciales", "Tiempo neto", "51:30", "ok");
+        contiene(p.texto(DIRECTOR, "LISPLA[\"*\"]"), "3 registros.");
+        contiene(p.texto(DIRECTOR, "LISPLA[\"99\"]"), "Error: el registro no existe");
+        contiene(p.texto(PERIODISTA, "LISPLA[\"1\"]"), "Error: no tiene permiso para ejecutar LISPLA");
+    }
+
+    @Test
+    void updpla() {
+        contiene(p.texto(JEFE_PRENSA, "UPDPLA[\"2\",\"Noticiero Matinal\",\"60\",\"165\"]"), "Éxito: plantilla modificada correctamente", "ok");
+        contiene(p.texto(JEFE_PRENSA, "UPDPLA[\"1\",\"\",\"45\",\"\"]"), "Error: la plantilla tiene escaletas en borrador", "(R19)");
+        contiene(p.texto(JEFE_PRENSA, "UPDPLA[\"1\",\"Noticiero Central\",\"\",\"140\"]"), "Éxito: plantilla modificada correctamente");
+    }
+
+    @Test
+    void updcor() {
+        contiene(p.texto(JEFE_PRENSA, "UPDCOR[\"4\",\"21\",\"\"]"), "Éxito: corte modificado correctamente", "minuto 21");
+        contiene(p.texto(JEFE_PRENSA, "UPDCOR[\"2\",\"29\",\"03:00\"]"), "Error: la plantilla tiene escaletas en borrador");
+        contiene(p.texto(JEFE_PRENSA, "UPDCOR[\"99\",\"21\",\"\"]"), "Error: el registro no existe");
+    }
 }

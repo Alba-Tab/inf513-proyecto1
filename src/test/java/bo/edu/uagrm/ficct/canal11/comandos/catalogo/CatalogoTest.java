@@ -25,11 +25,11 @@ class CatalogoTest {
 
     @Test
     void tieneLosComandosDeLosCasosDeUsoAprobados() {
-        assertEquals(62, catalogo.cantidad());
+        assertEquals(65, catalogo.cantidad());
         Map<String, Long> porCu = catalogo.todos().stream()
                 .collect(Collectors.groupingBy(CommandSpec::casoUso, TreeMap::new, Collectors.counting()));
         assertEquals(Map.of("CU-01", 8L, "CU-02", 9L, "CU-03", 9L, "CU-04", 10L, "CU-05", 11L,
-                "CU-06", 10L, "CU-07", 2L, "CU-08", 3L), porCu);
+                "CU-06", 13L, "CU-07", 2L, "CU-08", 3L), porCu);
     }
 
     /** Cada ejemplo del Anexo A se lee con su código y pasa la validación de su ficha. */
