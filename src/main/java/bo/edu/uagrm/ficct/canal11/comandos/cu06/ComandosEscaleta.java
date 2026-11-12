@@ -12,22 +12,17 @@ import bo.edu.uagrm.ficct.canal11.comandos.catalogo.Tipo;
 
 import java.sql.SQLException;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 /**
- * CU-06, segunda parte: la escaleta del noticiero y sus ítems, con control de tiempos (Tabla 84 del
- * Anexo A).
+ * CU-06, segunda parte: la escaleta del noticiero (Tabla 84 del Anexo A). Los ítems y su control de
+ * tiempos están en {@link ComandosItems}.
  *
  * <ul>
  *   <li>R20: una escaleta por horario y fecha; la grilla y la plantilla son del mismo programa, la
  *       fecha cae en el día y la vigencia de la grilla, y la plantilla está lista (R18).</li>
- *   <li>R21: los cortes los genera INSESC (uno por bloque, al final); INSITE no los acepta.</li>
- *   <li>R22: el orden es único dentro del bloque y el bloque existe en la plantilla.</li>
- *   <li>R23: solo entran notas aprobadas. R24: una nota no se repite en la misma emisión.</li>
+ *   <li>R21: INSESC genera los cortes (uno por bloque, al final).</li>
  *   <li>R25, R26: duración, acumulado, hora de salida y balance por bloque salen de las vistas
  *       {@code v_escaleta_grilla} y {@code v_bloque_balance}; flotados y bajas no suman.</li>
  *   <li>LISESC marca cada ítem con su alerta: nota que volvió a revisión (D24), material sin
@@ -39,10 +34,6 @@ import java.util.Optional;
 public final class ComandosEscaleta {
 
     private static final String CU = "CU-06";
-    static final Tipo TIPO_ITEM = Tipo.opcion("apertura", "titulares", "nota", "enlace_vivo", "entrevista", "corte", "despedida", "otro");
-    /** Un ítem agregado menos de una hora antes del inicio cuenta como de última hora (se marca en el ítem). */
-    private static final int MINUTOS_ULTIMA_HORA = 60;
-
     private ComandosEscaleta() {
     }
 
@@ -58,15 +49,6 @@ public final class ComandosEscaleta {
                         .param("id", Tipo.ID).param("estado", Tipo.opcion("borrador", "cerrada", "emitida"))
                         .opcional("hora_inicio_real", Tipo.HORA).opcional("duracion_real", Tipo.DURACION)
                         .ejemplo("UPDESC[\"2\",\"emitida\",\"20:00:20\",\"60:42\"]").accion(ComandosEscaleta::updesc).build(),
-                CommandSpec.de(CU, "INSITE", "Agregar ítem al final del bloque (solo notas aprobadas; no acepta cortes)")
-                        .param("id_escaleta", Tipo.ID).param("bloque", Tipo.BLOQUE).param("tipo", TIPO_ITEM)
-                        .param("id_nota o titulo", Tipo.texto(200)).opcional("id_presentador", Tipo.ID)
-                        .opcional("duracion", Tipo.DURACION)
-                        .ejemplo("INSITE[\"1\",\"B\",\"enlace_vivo\",\"Enlace: paro de transporte\",\"10\",\"02:00\"]")
-                        .accion(ComandosEscaleta::insite).build(),
-                CommandSpec.de(CU, "DELITE", "Dar de baja un ítem")
-                        .param("id", Tipo.ID)
-                        .ejemplo("DELITE[\"9\"]").accion(ComandosEscaleta::delite).build(),
                 CommandSpec.de(CU, "EXPESC", "Exportar la escaleta (adjunto HTML)")
                         .param("id_escaleta", Tipo.ID)
                         .ejemplo("EXPESC[\"1\"]").accion(ComandosEscaleta::expesc).build());
@@ -103,7 +85,7 @@ public final class ComandosEscaleta {
             """.formatted(Formato.mmss("g.duracion"), Formato.mmss("g.acumulado_seg::int"), Formato.mmss("g.duracion_real"));
 
     /** R26: usado frente a disponible por bloque; alerta si sobran o faltan más de 15 s. */
-    private static final String BALANCE = """
+    static final String BALANCE = """
             SELECT b.bloque AS "Bloque", %s AS "Disponible", %s AS "Usado", %s AS "Diferencia", b.alerta AS "Alerta"
             FROM v_bloque_balance b WHERE b.escaleta_id = ? ORDER BY b.bloque
             """.formatted(Formato.mmss("b.tiempo_disponible"), Formato.mmss("b.tiempo_usado::int"), Formato.mmss("b.diferencia::int"));
@@ -285,78 +267,6 @@ public final class ComandosEscaleta {
 
     // =================================================================== ítems
 
-    private static final String ITEMS = """
-            SELECT i.id AS "Id", i.bloque AS "Bloque", CASE WHEN i.tipo = 'corte' THEN 'final' ELSE i.orden::text END AS "Orden",
-                   i.tipo AS "Tipo", COALESCE(n.slug || ' (nota ' || n.id || ')', i.titulo) AS "Contenido",
-                   u.nombre || ' ' || u.apellido AS "Presentador",
-                   %s AS "Duración", %s AS "Real", i.estado AS "Estado", i.ultima_hora AS "Última hora"
-            FROM item_escaleta i
-            JOIN escaleta e ON e.id = i.escaleta_id
-            JOIN plantilla pl ON pl.id = e.plantilla_id
-            LEFT JOIN nota n ON n.id = i.nota_id
-            LEFT JOIN v_nota_duracion d ON d.nota_id = i.nota_id
-            LEFT JOIN personal pe ON pe.id = i.presentador_id
-            LEFT JOIN usuario u ON u.id = pe.usuario_id
-            """.formatted(Formato.mmss("CASE WHEN i.nota_id IS NOT NULL THEN CEIL(n.palabras * 60.0 / COALESCE(n.palabras_por_minuto, pl.palabras_por_minuto))::int + d.duracion_video ELSE i.duracion_estimada END"),
-            Formato.mmss("i.duracion_real"));
-
-    private static Resultado insite(Contexto ctx) throws SQLException, ErrorNegocio {
-        Parametros p = ctx.p();
-        int idEscaleta = p.entero("id_escaleta");
-        String bloque = p.texto("bloque");
-        String tipo = p.texto("tipo");
-        Fila e = enBorrador(ctx, idEscaleta);
-        if (tipo.equals("corte")) {
-            throw ErrorNegocio.de("los cortes los genera el sistema");  // A5, R21
-        }
-        bloqueExistente(ctx, idEscaleta, bloque);
-        String contenido = p.texto("id_nota o titulo");
-        Integer idNota = null;
-        String titulo = null;
-        List<String> notas = new ArrayList<>();
-        if (tipo.equals("nota")) {
-            if (!contenido.matches("\\d+")) {
-                throw ErrorNegocio.de("para un ítem de tipo nota indique el id de la nota (por ejemplo \"7\")");
-            }
-            idNota = Integer.parseInt(contenido);
-            notaParaLaEscaleta(ctx, idEscaleta, idNota, 0);
-            if (p.tiene("duracion")) {
-                notas.add("La duración de una nota se calcula con su guion y su material: se ignoró la indicada.");
-            }
-        } else {
-            titulo = contenido;
-        }
-        presentadorValido(ctx, p.entero("id_presentador"));
-        boolean ultimaHora = esUltimaHora(e.fecha("fecha"), e.hora("hora_inicio"), LocalDateTime.now(ctx.reloj()));
-        int id = ctx.devolviendo("""
-                INSERT INTO item_escaleta (escaleta_id, orden, bloque, tipo, nota_id, titulo, presentador_id, duracion_estimada, ultima_hora)
-                SELECT ?, COALESCE(max(orden) FILTER (WHERE tipo <> 'corte'), 0) + 1, ?, ?, ?, ?, ?, ?, ?
-                FROM item_escaleta WHERE escaleta_id = ? AND bloque = ?
-                RETURNING id
-                """, idEscaleta, bloque, tipo, idNota, titulo, p.entero("id_presentador"),
-                idNota == null && p.tiene("duracion") ? p.entero("duracion") : 0, ultimaHora, idEscaleta, bloque).entero("id");
-        return conBalance(ctx, Resultado.exito("Escaleta", "ítem agregado"), id, idEscaleta, bloque, notas);
-    }
-
-    private static Resultado delite(Contexto ctx) throws SQLException, ErrorNegocio {
-        return cambiarEstadoItem(ctx, "baja", "ítem dado de baja");
-    }
-
-    /** DELITE: el ítem deja de sumar tiempo (R26) pero queda en la escaleta. */
-    private static Resultado cambiarEstadoItem(Contexto ctx, String estado, String operacion) throws SQLException, ErrorNegocio {
-        int id = ctx.p().entero("id");
-        Fila i = ctx.requerir("SELECT escaleta_id, bloque, tipo, estado FROM item_escaleta WHERE id = ?", id);
-        enBorrador(ctx, i.entero("escaleta_id"));
-        if ("corte".equals(i.texto("tipo"))) {
-            throw ErrorNegocio.de("los cortes los genera el sistema: no se dan de baja");
-        }
-        if (!"programado".equals(i.texto("estado"))) {
-            throw ErrorNegocio.de("el ítem ya está " + i.texto("estado"));
-        }
-        ctx.ejecutar("UPDATE item_escaleta SET estado = ?, actualizado_en = CURRENT_TIMESTAMP WHERE id = ?", estado, id);
-        return conBalance(ctx, Resultado.exito("Escaleta", operacion), id, i.entero("escaleta_id"), i.texto("bloque"), List.of());
-    }
-
     private static Resultado expesc(Contexto ctx) throws SQLException, ErrorNegocio {
         int id = ctx.p().entero("id_escaleta");
         Resultado esc = escaleta(ctx, id);
@@ -369,78 +279,4 @@ public final class ComandosEscaleta {
     }
 
     // =================================================================== reglas comunes
-
-    /** La escaleta existe y está en borrador (A4). */
-    private static Fila enBorrador(Contexto ctx, int idEscaleta) throws SQLException, ErrorNegocio {
-        Fila e = ctx.requerir("SELECT estado, fecha, hora_inicio FROM escaleta WHERE id = ?", idEscaleta);
-        if (!"borrador".equals(e.texto("estado"))) {
-            throw ErrorNegocio.de("la escaleta no está en borrador");
-        }
-        return e;
-    }
-
-    /** R22: el bloque existe en la plantilla de la escaleta. */
-    private static void bloqueExistente(Contexto ctx, int idEscaleta, String bloque) throws SQLException, ErrorNegocio {
-        Fila pl = ctx.requerir("SELECT pl.cantidad_bloques FROM escaleta e JOIN plantilla pl ON pl.id = e.plantilla_id WHERE e.id = ?", idEscaleta);
-        int bloques = pl.entero("cantidad_bloques");
-        if (bloque.charAt(0) - 'A' + 1 > bloques) {
-            throw ErrorNegocio.de("la escaleta tiene los bloques de la A a la " + (char) ('A' + bloques - 1));
-        }
-    }
-
-    /** R23 y R24: la nota existe, está aprobada y no está ya programada en la escaleta. */
-    private static void notaParaLaEscaleta(Contexto ctx, int idEscaleta, int idNota, int exceptoItem) throws SQLException, ErrorNegocio {
-        Fila n = ctx.uno("SELECT slug, estado FROM nota WHERE id = ?", idNota).orElseThrow(() -> ErrorNegocio.de("la nota indicada no existe"));
-        if (!"aprobada".equals(n.texto("estado"))) {
-            throw ErrorNegocio.de("solo se agregan notas aprobadas (" + n.texto("slug") + " está " + n.texto("estado").replace('_', ' ') + ")");  // A3
-        }
-        Optional<Fila> otro = ctx.uno("""
-                SELECT id, estado FROM item_escaleta WHERE escaleta_id = ? AND nota_id = ? AND id <> ? AND estado IN ('programado', 'flotado')
-                ORDER BY estado LIMIT 1
-                """, idEscaleta, idNota, exceptoItem);
-        if (otro.isPresent()) {
-            if ("flotado".equals(otro.get().texto("estado"))) {
-                throw ErrorNegocio.de("la nota está flotada en esta escaleta (ítem " + otro.get().entero("id") + ")");
-            }
-            throw ErrorNegocio.de("esa nota ya está en la escaleta");  // R24
-        }
-    }
-
-    private static void presentadorValido(Contexto ctx, Integer idPersonal) throws SQLException, ErrorNegocio {
-        if (idPersonal == null) {
-            return;
-        }
-        Fila f = ctx.uno("""
-                SELECT u.nombre || ' ' || u.apellido AS nombre, pe.cargo, pe.estado
-                FROM personal pe JOIN usuario u ON u.id = pe.usuario_id WHERE pe.id = ?
-                """, idPersonal).orElseThrow(() -> ErrorNegocio.de("el presentador indicado no existe"));
-        if (!List.of("presentador", "conductor").contains(f.texto("cargo"))) {
-            throw ErrorNegocio.de(f.texto("nombre") + " es " + f.texto("cargo").replace('_', ' ') + ": el ítem lo presenta un presentador o un conductor");
-        }
-        if (!"activo".equals(f.texto("estado"))) {
-            throw ErrorNegocio.de("la ficha de " + f.texto("nombre") + " está inactiva");
-        }
-    }
-
-    /** La ficha del ítem y cómo quedó el tiempo de su bloque. */
-    private static Resultado conBalance(Contexto ctx, Resultado r, int idItem, int idEscaleta, String bloque, List<String> notas)
-            throws SQLException, ErrorNegocio {
-        r.ficha(ctx.requerir(ITEMS + " WHERE i.id = ?", idItem));
-        for (String n : notas) {
-            r.parrafo(n);
-        }
-        Fila b = ctx.requerir(BALANCE.replace("ORDER BY b.bloque", "AND b.bloque = ?"), idEscaleta, bloque);
-        String texto = "Bloque " + bloque + ": usado " + b.texto("Usado") + " de " + b.texto("Disponible");
-        if ("ok".equals(b.texto("Alerta"))) {
-            r.parrafo(texto + " (cuadra).");
-        } else {
-            r.aviso(texto + ": " + b.texto("Alerta") + " de " + b.texto("Diferencia").replace("-", "") + ".");
-        }
-        return r.parrafo("La escaleta se guarda igual; para verla completa: LISESC[\"" + idEscaleta + "\"].");
-    }
-
-    /** Un ítem es de última hora si se agrega menos de una hora antes del inicio de la emisión (o después). */
-    static boolean esUltimaHora(LocalDate fecha, LocalTime inicio, LocalDateTime ahora) {
-        return !ahora.isBefore(LocalDateTime.of(fecha, inicio).minusMinutes(MINUTOS_ULTIMA_HORA));
-    }
 }
