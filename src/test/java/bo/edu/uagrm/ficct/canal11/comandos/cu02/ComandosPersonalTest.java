@@ -116,6 +116,23 @@ class ComandosPersonalTest {
         contiene(p.texto(PERIODISTA, "LISTUR[\"*\",\"x\"]"), "Error: se esperaba 1 parámetro (filtro) y llegaron 2");
     }
 
+    @Test
+    void instur() throws Exception {
+        contiene(p.texto(JEFE_PRENSA, "INSTUR[\"Parcial 15-19\",\"15:00\",\"19:00\",\"1,2,3,4,5\",\"Practicantes\"]"),
+                "Éxito: turno registrado correctamente", "15:00–19:00");
+        // sin días: lunes a viernes
+        contiene(p.texto(JEFE_PRENSA, "INSTUR[\"Guardia\",\"09:00\",\"13:00\",\"\",\"\"]"), "lun, mar, mié, jue, vie");
+        contiene(p.texto(PERIODISTA, "INSTUR[\"X\",\"07:00\",\"15:00\",\"1\",\"\"]"), "Error: no tiene permiso para ejecutar INSTUR");
+    }
+
+    @Test
+    void insturErrores() {
+        contiene(p.texto(JEFE_PRENSA, "INSTUR[\"Raro\",\"15:00\",\"15:00\",\"1\",\"\"]"),
+                "Error: la hora de inicio y la de fin del turno no pueden ser iguales");
+        contiene(p.texto(JEFE_PRENSA, "INSTUR[\"Mañana\",\"07:00\",\"15:00\",\"1\",\"\"]"), "Error: ya existe un turno con ese nombre");
+        contiene(p.texto(JEFE_PRENSA, "INSTUR[\"X\",\"07:00\",\"15:00\",\"1,8\",\"\"]"), "Error: los días van de 1 (lunes) a 7 (domingo)");
+    }
+
 
 
 

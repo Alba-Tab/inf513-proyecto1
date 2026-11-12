@@ -24,11 +24,11 @@ class CatalogoTest {
     private final Catalogo catalogo = Catalogo.completo();
 
     @Test
-    void tiene58ComandosEsencialesEnSusCasosDeUso() {
-        assertEquals(58, catalogo.cantidad());
+    void tieneLosComandosDeLosCasosDeUsoAprobados() {
+        assertEquals(59, catalogo.cantidad());
         Map<String, Long> porCu = catalogo.todos().stream()
                 .collect(Collectors.groupingBy(CommandSpec::casoUso, TreeMap::new, Collectors.counting()));
-        assertEquals(Map.of("CU-01", 8L, "CU-02", 8L, "CU-03", 9L, "CU-04", 10L, "CU-05", 8L,
+        assertEquals(Map.of("CU-01", 8L, "CU-02", 9L, "CU-03", 9L, "CU-04", 10L, "CU-05", 8L,
                 "CU-06", 10L, "CU-07", 2L, "CU-08", 3L), porCu);
     }
 
