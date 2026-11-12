@@ -18,11 +18,15 @@ import java.util.logging.Logger;
 
 /**
  * Configura el log de la aplicación: una línea por evento, en la consola y en
- * {@code logs/canal11.log}. En el servidor el log es lo único que se ve.
+ * {@code logs/canal11.0.log}. Además, como pide la consigna, {@code logs/access.log} lleva una
+ * línea por cada correo procesado y {@code logs/error.log} las fallas y las excepciones.
  */
 public final class Registro {
 
     private static final String RAIZ = "bo.edu.uagrm.ficct.canal11";
+
+    /** Logger de {@code access.log}: una línea por correo atendido, rechazado o descartado. */
+    public static final String ACCESO = RAIZ + ".acceso";
 
     private Registro() {
     }
@@ -39,15 +43,29 @@ public final class Registro {
         raiz.addHandler(consola);
     }
 
-    /** Consola y archivo rotativo en la carpeta de logs (5 archivos de 5 MB). */
+    /**
+     * Consola y, en la carpeta de logs: {@code canal11.%g.log} con todo (5 archivos de 5 MB),
+     * {@code access.log} con las líneas del logger {@link #ACCESO} y {@code error.log} con los
+     * avisos y los errores (WARNING o más).
+     */
     public static void iniciar(Path carpetaLogs, ZoneId zona) throws IOException {
         iniciarConsola(zona);
         Files.createDirectories(carpetaLogs);
-        FileHandler archivo = new FileHandler(carpetaLogs.resolve("canal11.%g.log").toString(), 5_000_000, 5, true);
-        archivo.setEncoding(StandardCharsets.UTF_8.name());
-        archivo.setFormatter(new FormatoLinea(zona));
-        archivo.setLevel(Level.ALL);
-        Logger.getLogger(RAIZ).addHandler(archivo);
+        Logger raiz = Logger.getLogger(RAIZ);
+        raiz.addHandler(archivo(carpetaLogs.resolve("canal11.%g.log"), 5_000_000, 5, Level.ALL, zona));
+        // shortcut: access.log y error.log no rotan; si crecen demasiado, rotarlos con logrotate en el servidor
+        Handler acceso = archivo(carpetaLogs.resolve("access.log"), 0, 1, Level.ALL, zona);
+        acceso.setFilter(r -> ACCESO.equals(r.getLoggerName()));
+        raiz.addHandler(acceso);
+        raiz.addHandler(archivo(carpetaLogs.resolve("error.log"), 0, 1, Level.WARNING, zona));
+    }
+
+    private static Handler archivo(Path ruta, int limite, int cantidad, Level nivel, ZoneId zona) throws IOException {
+        FileHandler h = new FileHandler(ruta.toString(), limite, cantidad, true);
+        h.setEncoding(StandardCharsets.UTF_8.name());
+        h.setFormatter(new FormatoLinea(zona));
+        h.setLevel(nivel);
+        return h;
     }
 
     /**
