@@ -22,6 +22,13 @@ class EnmascaradorTest {
     }
 
     @Test
+    void conservaLasComillasEscapadas() {
+        String asunto = "INSUSU[\"Carla \\\"Coco\\\"\",\"Rojas\",\"3100003\",\"c@gmail.com\",\"7123\",\"clave\",\"3\"]";
+        assertEquals("INSUSU[\"Carla \\\"Coco\\\"\",\"Rojas\",\"3100003\",\"c@gmail.com\",\"7123\",\"******\",\"3\"]",
+                Enmascarador.asunto(asunto));
+    }
+
+    @Test
     void unInsusuMalFormadoOcultaTodo() {
         String roto = INSUSU.substring(0, INSUSU.length() - 1); // sin el corchete de cierre
         assertEquals("INSUSU[******]", Enmascarador.asunto(roto));

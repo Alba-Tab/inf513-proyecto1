@@ -46,12 +46,17 @@ public final class Enmascarador {
             if (!c.conCorchetes()) {
                 return c.codigo();
             }
-            return c.codigo() + parametros(c).stream().map(v -> "\"" + v + "\"").collect(Collectors.joining(",", "[", "]"));
+            return c.codigo() + parametros(c).stream().map(Enmascarador::entreComillas).collect(Collectors.joining(",", "[", "]"));
         }
         if (p instanceof Invalido i && esSensible(i.codigo())) {
             return i.codigo() + "[" + MASCARA + "]";
         }
         return asunto.strip();
+    }
+
+    /** El valor como se escribe en el asunto: entre comillas, con {@code "} y {@code \\} escapadas. */
+    private static String entreComillas(String v) {
+        return "\"" + v.replace("\\", "\\\\").replace("\"", "\\\"") + "\"";
     }
 
     /** Los parámetros del comando con los sensibles reemplazados por {@link #MASCARA}. */

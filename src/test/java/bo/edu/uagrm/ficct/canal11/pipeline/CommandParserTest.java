@@ -107,6 +107,15 @@ class CommandParserTest {
     }
 
     @Test
+    void comillasEscapadasDentroDeUnParametro() {
+        Comando c = assertInstanceOf(Comando.class, CommandParser.analizar("OBSNOT[\"6\",\"Dijo \\\"no\\\" al final\"]"));
+        assertEquals(List.of("6", "Dijo \"no\" al final"), c.parametros());
+        Comando barra = assertInstanceOf(Comando.class, CommandParser.analizar("INSMAT[\"3\",\"C:\\\\media\",\"C:\\ruta\"]"));
+        assertEquals(List.of("3", "C:\\media", "C:\\ruta"), barra.parametros());  // \\ es una barra; una barra sola queda
+        assertInstanceOf(Invalido.class, CommandParser.analizar("OBSNOT[\"6\",\"sin cerrar\\\"]"));
+    }
+
+    @Test
     void unAsuntoNuloNoRompeNada() {
         assertEquals(Motivo.NO_RECONOCIDO, invalido(null).motivo());
     }
@@ -119,8 +128,8 @@ class CommandParserTest {
             "INSCOB[\"a\",,\"b\"]                  ; falta un parámetro entre comas",
             "INSCOB[\"a\",]                        ; falta un parámetro entre comas",
             "INSCOB[,\"a\"]                        ; falta un parámetro entre comas",
-            "OBSNOT[\"6\",\"Dijo \"no\" al final\"] ; no use comillas dentro de un parámetro",
-            "OBSNOT[\"6\",Dijo \"no\"]             ; no use comillas dentro de un parámetro"
+            "OBSNOT[\"6\",\"Dijo \"no\" al final\"] ; escríbalas con barra invertida",
+            "OBSNOT[\"6\",Dijo \"no\"]             ; escríbalas con barra invertida"
     })
     void formatoIncorrecto(String asunto, String detalle) {
         Invalido i = invalido(asunto);

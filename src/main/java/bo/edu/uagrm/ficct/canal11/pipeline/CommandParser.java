@@ -30,6 +30,7 @@ public final class CommandParser {
 
     public static final String NO_RECONOCIDO = "Error: comando no reconocido. Envíe AYUDA para ver los comandos disponibles";
     static final String FORMATO = "Error: formato esperado CODIGO[\"param1\",\"param2\",...]";
+    private static final String COMILLAS = "para poner comillas dentro de un parámetro escríbalas con barra invertida: \\\"";
 
     /** Prefijos de respuesta y reenvío en español e inglés, con número opcional ({@code RE[2]:}). */
     private static final Pattern PREFIJO = Pattern.compile(
@@ -83,7 +84,10 @@ public final class CommandParser {
         return t;
     }
 
-    /** Lee {@code [ "a" , "b" , c ]} a partir del corchete de apertura. */
+    /**
+     * Lee {@code [ "a" , "b" , c ]} a partir del corchete de apertura. Dentro de un parámetro entre
+     * comillas, {@code \"} es una comilla y {@code \\} una barra invertida.
+     */
     private static ComandoParseado parametros(String codigo, String texto) {
         List<String> valores = new ArrayList<>();
         int i = 1; // después del "["
@@ -100,14 +104,23 @@ public final class CommandParser {
             char c = texto.charAt(i);
             String valor;
             if (c == '"') {
-                int cierre = texto.indexOf('"', i + 1);
-                if (cierre < 0) {
+                StringBuilder sb = new StringBuilder();
+                int k = i + 1;
+                while (k < n && texto.charAt(k) != '"') {
+                    char x = texto.charAt(k);
+                    if (x == '\\' && k + 1 < n && (texto.charAt(k + 1) == '"' || texto.charAt(k + 1) == '\\')) {
+                        x = texto.charAt(++k);  // \" es una comilla y \\ una barra dentro del parámetro
+                    }
+                    sb.append(x);
+                    k++;
+                }
+                if (k >= n) {
                     return formato(codigo, "un parámetro tiene la comilla sin cerrar");
                 }
-                valor = texto.substring(i + 1, cierre);
-                i = saltarEspacios(texto, cierre + 1);
+                valor = sb.toString();
+                i = saltarEspacios(texto, k + 1);
                 if (i < n && texto.charAt(i) != ',' && texto.charAt(i) != ']') {
-                    return formato(codigo, "no use comillas dentro de un parámetro");
+                    return formato(codigo, COMILLAS);
                 }
             } else if (c == ',' || c == ']') {
                 return formato(codigo, "falta un parámetro entre comas; para dejarlo vacío escriba \"\"");
@@ -115,7 +128,7 @@ public final class CommandParser {
                 int fin = i;
                 while (fin < n && texto.charAt(fin) != ',' && texto.charAt(fin) != ']') {
                     if (texto.charAt(fin) == '"') {
-                        return formato(codigo, "no use comillas dentro de un parámetro");
+                        return formato(codigo, COMILLAS);
                     }
                     fin++;
                 }
