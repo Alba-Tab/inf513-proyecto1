@@ -107,7 +107,7 @@ class DiagnosticoTest {
         int fallas = diagnosticar(config(url, usuario, contrasena.isEmpty() ? "sin-clave" : contrasena, FakePop3Server.CONTRASENA));
 
         assertEquals(0, fallas, texto());
-        assertTrue(texto().contains("tablas cargadas: 15 usuarios, 58 permisos"), texto());
+        assertTrue(texto().contains("tablas cargadas: 15 usuarios, 66 permisos"), texto());
         assertTrue(texto().contains("Resumen: todo listo"), texto());
     }
 }

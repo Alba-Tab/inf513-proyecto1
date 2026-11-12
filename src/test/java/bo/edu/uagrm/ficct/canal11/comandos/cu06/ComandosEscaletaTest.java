@@ -66,8 +66,8 @@ class ComandosEscaletaTest {
     @Test
     void ultimaHora() {
         LocalDate d = LocalDate.of(2026, 10, 12);
-        assertFalse(ComandosEscaleta.esUltimaHora(d, LocalTime.of(20, 0), LocalDateTime.of(2026, 10, 12, 18, 59)));
-        assertTrue(ComandosEscaleta.esUltimaHora(d, LocalTime.of(20, 0), LocalDateTime.of(2026, 10, 12, 19, 0)));
+        assertFalse(ComandosItems.esUltimaHora(d, LocalTime.of(20, 0), LocalDateTime.of(2026, 10, 12, 18, 59)));
+        assertTrue(ComandosItems.esUltimaHora(d, LocalTime.of(20, 0), LocalDateTime.of(2026, 10, 12, 19, 0)));
     }
 
     // ------------------------------------------------------------------ escaleta
@@ -168,5 +168,35 @@ class ComandosEscaletaTest {
         assertEquals(0, p.numero("SELECT count(*) FROM v_escaleta_grilla WHERE item_id = 9"));
         contiene(p.texto(JEFE_PRENSA, "DELITE[\"1\"]"), "Error: los cortes los genera el sistema: no se dan de baja");
         contiene(p.texto(JEFE_PRENSA, "DELITE[\"19\"]"), "Error: la escaleta no está en borrador");
+    }
+
+    @Test
+    void upditeReordenaYMueve() throws Exception {
+        contiene(p.texto(JEFE_PRENSA, "UPDITE[\"11\",\"1\",\"\",\"\",\"\",\"\"]"), "Éxito: ítem modificado correctamente");
+        assertEquals(1, item(11).entero("orden"));
+        assertEquals(2, item(7).entero("orden"));
+        assertEquals(5, item(10).entero("orden"));
+        contiene(p.texto(JEFE_PRENSA, "UPDITE[\"15\",\"\",\"C\",\"\",\"\",\"\"]"), "Bloque C: usado");
+        assertEquals("C", item(15).texto("bloque"));
+        assertEquals(2, item(15).entero("orden"));
+        contiene(p.texto(JEFE_PRENSA, "UPDITE[\"14\",\"\",\"\",\"11\",\"03:00\",\"\"]"), "03:00", "Gonzalo Salvatierra Roca");
+        contiene(p.texto(JEFE_PRENSA, "UPDITE[\"9\",\"3\",\"B\",\"10\",\"02:30\",\"\"]"), "se ignoró la indicada");
+        assertEquals("B", item(9).texto("bloque"));
+    }
+
+    @Test
+    void upditeVuelveAProgramarUnFlotadoYCargaDuracionesReales() throws Exception {
+        contiene(p.texto(JEFE_PRENSA, "UPDITE[\"16\",\"\",\"\",\"\",\"\",\"\",\"programado\"]"), "Éxito: ítem modificado correctamente", "programado");
+        assertEquals("programado", item(16).texto("estado"));
+        contiene(p.texto(JEFE_PRENSA, "UPDITE[\"18\",\"\",\"\",\"\",\"\",\"00:35\"]"), "Éxito: duración real registrada correctamente", "00:35");
+    }
+
+    @Test
+    void upditeErrores() {
+        contiene(p.texto(JEFE_PRENSA, "UPDITE[\"1\",\"2\",\"\",\"\",\"\",\"\"]"), "Error: los cortes los genera el sistema");
+        contiene(p.texto(JEFE_PRENSA, "UPDITE[\"12\",\"\",\"\",\"\",\"\",\"\",\"programado\"]"), "Error: solo un ítem flotado vuelve a programarse");
+        contiene(p.texto(JEFE_PRENSA, "UPDITE[\"19\",\"1\",\"\",\"\",\"\",\"\"]"), "Error: la escaleta no está en borrador");
+        contiene(p.texto(JEFE_PRENSA, "UPDITE[\"9\",\"\",\"E\",\"\",\"\",\"\"]"), "Error: la escaleta tiene los bloques de la A a la D");
+        contiene(p.texto(JEFE_PRENSA, "UPDITE[\"999\",\"1\",\"\",\"\",\"\",\"\"]"), "Error: el registro no existe");
     }
 }

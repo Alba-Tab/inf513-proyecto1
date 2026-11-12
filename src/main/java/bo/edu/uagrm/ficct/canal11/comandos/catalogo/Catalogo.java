@@ -6,6 +6,7 @@ import bo.edu.uagrm.ficct.canal11.comandos.cu03.ComandosRecursos;
 import bo.edu.uagrm.ficct.canal11.comandos.cu04.ComandosCoberturas;
 import bo.edu.uagrm.ficct.canal11.comandos.cu05.ComandosNotas;
 import bo.edu.uagrm.ficct.canal11.comandos.cu06.ComandosEscaleta;
+import bo.edu.uagrm.ficct.canal11.comandos.cu06.ComandosItems;
 import bo.edu.uagrm.ficct.canal11.comandos.cu06.ComandosProgramacion;
 import bo.edu.uagrm.ficct.canal11.comandos.cu07.ComandosAnalitica;
 import bo.edu.uagrm.ficct.canal11.comandos.cu08.ComandosReportes;
@@ -62,6 +63,7 @@ public final class Catalogo {
         todos.addAll(ComandosNotas.comandos());
         todos.addAll(ComandosProgramacion.comandos());
         todos.addAll(ComandosEscaleta.comandos());
+        todos.addAll(ComandosItems.comandos());
         todos.addAll(ComandosAnalitica.comandos());
         todos.addAll(ComandosReportes.comandos());
         return new Catalogo(todos);

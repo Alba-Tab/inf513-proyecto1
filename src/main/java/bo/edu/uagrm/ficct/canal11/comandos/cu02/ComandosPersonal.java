@@ -37,6 +37,7 @@ public final class ComandosPersonal {
     private static final String CU = "CU-02";
     private static final List<String> CARGOS = List.of("periodista", "camarografo", "editor", "presentador", "conductor", "jefe_prensa");
     private static final List<String> CONDICIONES = List.of("planta", "contrato", "practicante");
+    private static final String DIAS_POR_DEFECTO = "1,2,3,4,5";
     static final Tipo CARGO = Tipo.opcion(CARGOS.toArray(String[]::new));
     static final Tipo CONDICION = Tipo.opcion(CONDICIONES.toArray(String[]::new));
     static final Tipo TIPO_AUSENCIA = Tipo.opcion("permiso", "vacacion", "baja_medica", "comision");
@@ -63,6 +64,10 @@ public final class ComandosPersonal {
                 CommandSpec.de(CU, "LISTUR", "Listar turnos")
                         .param("filtro", Tipo.FILTRO)
                         .ejemplo("LISTUR[\"*\"]").accion(ComandosPersonal::listur).build(),
+                CommandSpec.de(CU, "INSTUR", "Registrar turno")
+                        .param("nombre", Tipo.texto(50)).param("hora_inicio", Tipo.HORA).param("hora_fin", Tipo.HORA)
+                        .opcional("dias", Tipo.DIAS).opcional("descripcion", Tipo.texto(150))
+                        .ejemplo("INSTUR[\"Parcial 15-19\",\"15:00\",\"19:00\",\"1,2,3,4,5\",\"Practicantes\"]").accion(ComandosPersonal::instur).build(),
                 CommandSpec.de(CU, "LISAUS", "Listar ausencias")
                         .param("id_personal", Tipo.ID_O_TODOS)
                         .ejemplo("LISAUS[\"6\"]").accion(ComandosPersonal::lisaus).build(),
@@ -242,6 +247,18 @@ public final class ComandosPersonal {
                 ? ctx.consultar(TURNOS + " ORDER BY t.hora_inicio, t.id")
                 : ctx.consultar(TURNOS + " WHERE " + Sql.sinTildes("t.nombre") + " LIKE ? ORDER BY t.hora_inicio", Sql.contiene(filtro));
         return Resultado.listado("Turnos", filas, "No hay turnos con ese nombre.");
+    }
+
+    private static Resultado instur(Contexto ctx) throws SQLException, ErrorNegocio {
+        Parametros p = ctx.p();
+        Map<String, Object> v = new LinkedHashMap<>();
+        v.put("nombre", p.texto("nombre"));
+        v.put("hora_inicio", p.hora("hora_inicio"));
+        v.put("hora_fin", p.hora("hora_fin"));
+        v.put("dias", p.tiene("dias") ? p.texto("dias") : DIAS_POR_DEFECTO);
+        v.put("descripcion", p.texto("descripcion"));
+        int id = TablaCrud.insertar(ctx.repositorio(), ctx.conexion(), "turno", v);
+        return Resultado.exito("Turnos", "turno registrado").ficha(ctx.requerir(TURNOS + " WHERE t.id = ?", id));
     }
 
     // =================================================================== ausencias
