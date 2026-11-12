@@ -156,6 +156,13 @@ class ComandosNotasTest {
         contiene(p.texto(JEFE_PRENSA, "OBSNOT[\"5\",\"x\"]"), "Error: la nota no está en revisión");
     }
 
+    @Test
+    void obsnotConComillasEscapadasEnElMotivo() throws Exception {
+        contiene(p.texto(JEFE_PRENSA, "OBSNOT[\"3\",\"El vecino dijo \\\"no\\\" y falta su nombre\"]"), "Éxito: nota observada correctamente");
+        assertEquals("El vecino dijo \"no\" y falta su nombre",
+                p.consultar("SELECT motivo FROM revision_nota WHERE nota_id = 3 ORDER BY id DESC LIMIT 1").get(0).texto("motivo"));
+    }
+
 
     // ------------------------------------------------------------------ rótulos
 
