@@ -223,6 +223,14 @@ Resumen; el paso a paso completo está en [docs/despliegue.md](docs/despliegue.m
 5. Arrancar el demonio: `scripts/run.sh`. Para que vuelva solo si se cae, agregar a `crontab -e` la línea `*/5 * * * * <carpeta>/scripts/run.sh --si-no-corre`.
 6. Ver el estado y los logs: `scripts/estado.sh`. Detener: `scripts/stop.sh`.
 
+## Comprimido de entrega
+
+```bash
+scripts/empaquetar.sh ../docs-pipeline/Documento_Canal11_Pipeline.docx
+```
+
+Crea `2026-2_INF513-P1_grupo14sa.zip`, al lado del repositorio, con todo lo versionado en `HEAD` (sin `config.properties`, `target/` ni logs) y el documento técnico en la raíz del zip.
+
 ## Logs
 
 En la carpeta `logs/`:
