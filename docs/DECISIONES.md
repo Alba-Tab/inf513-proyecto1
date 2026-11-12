@@ -1,6 +1,6 @@
 # Decisiones técnicas
 
-Este proyecto es la versión en **tubería y filtros** (*pipes and filters*) de `canal11-mail`. Las decisiones D1 a D30 vienen de allí, ajustadas a los 58 comandos esenciales; las DP1 a DP8 son propias de esta versión.
+Este proyecto es la versión en **tubería y filtros** (*pipes and filters*) de `canal11-mail`. Las decisiones D1 a D30 vienen de allí, ajustadas a los comandos de esta versión; las DP1 a DP12 son propias de esta versión.
 
 ## Arquitectura de tubería (nuevas)
 
@@ -10,10 +10,14 @@ Este proyecto es la versión en **tubería y filtros** (*pipes and filters*) de 
 | DP2 | Una etapa que encuentra un problema le pone la respuesta de error al pedido; las demás se saltan, salvo **Registrar** y **Responder**, que corren siempre. Los correos automáticos se **descartan**: no se registran ni se responden | La bitácora (R2) y la respuesta no dependen de en qué paso falló el pedido | 11/11/2026 |
 | DP3 | El `Pipeline` nunca deja escapar una excepción de un correo: una `SQLException` se responde traducida y cualquier otra con «intente de nuevo más tarde». Solo un `Error` de Java sale, después de que `Ejecutar` deshizo la transacción | Que nada tumbe la app (D9) sin dejar datos a medias | 11/11/2026 |
 | DP4 | Se conservan los nombres del docente en los bordes (`MailVerificationThread`, `SendEmailThread`, `DBConnection`, `CommandParser`, `HTMLResponseBuilder`); `CommandProcessor` se reparte entre las etapas Identificar, Interpretar, Ayuda, Autorizar, Validar, Ejecutar y Registrar | El código sigue reconocible frente a la lección 3.0 y al documento | 11/11/2026 |
-| DP5 | **58 comandos esenciales** (antes 112): por caso de uso, el CRUD de la entidad principal y los comandos que aplican una regla de negocio. Los catálogos de apoyo (roles, turnos, tipos de recurso, plantillas y cortes, rótulos y material) quedan cargados en la base sin comandos | Menos código que defender y probar; el esquema de la base no cambia | 11/11/2026 |
+| DP5 | **Comandos esenciales** (antes 112): por caso de uso, el CRUD de la entidad principal y los comandos que aplican una regla de negocio. Los catálogos de apoyo (roles, tipos de recurso, plantillas y cortes, rótulos) quedan cargados en la base. DP9 completa el alcance con los CU aprobados | Menos código que defender y probar; el esquema de la base no cambia | 11/11/2026 |
 | DP6 | Se conserva EXPESC aunque no sea CRUD | Es el único comando que usa un adjunto MIME (`multipart/mixed`), un tema del curso | 11/11/2026 |
 | DP7 | Se conservan RETCOB, LISPRE y LISAUS | Sin RETCOB no hay coberturas cumplidas para ANACOB; DEVPRE pide el id del préstamo que da LISPRE; las ausencias registradas tienen que poder verse | 11/11/2026 |
 | DP8 | Paquetes sin ciclos: `config ← datos ← comandos ← pipeline`, y `correo` aparte | Cada paquete se entiende y se prueba sin los que están encima | 11/11/2026 |
+| DP9 | El alcance son los **8 casos de uso aprobados por el docente**: cada parte de su nombre tiene sus comandos. Se agregan INSTUR (turnos, CU-02), LISMAT, INSMAT y UPDMAT (material audiovisual, CU-05), LISPLA, UPDPLA y UPDCOR (configurar plantillas, CU-06) y UPDITE (confeccionar la escaleta, CU-06): **66 comandos**. Lo que los requisitos piden y los CU no nombran (duplicar coberturas, rótulos, flotar ítems, reportes de mantenimiento y de notas) queda para el sistema web | Lo único aprobado son los CU; el resto se decide para el Proyecto 2 | 12/11/2026 |
+| DP10 | UPDPLA no cambia la cantidad de bloques | Cambiarla exige agregar o quitar cortes (R18), y INSCOR y DELCOR no son básicos: así una plantilla nunca queda sin poder usarse | 12/11/2026 |
+| DP11 | Dentro de un parámetro entre comillas, `\"` es una comilla y `\\` una barra invertida; una barra sola se conserva | La consigna pide escapar comillas dobles; así un texto con comillas no rompe el formato | 12/11/2026 |
+| DP12 | `logs/access.log` (una línea por correo, del logger `canal11.acceso`) y `logs/error.log` (WARNING o más), además de `canal11.0.log`. No rotan | Los pide la consigna para la auditoría en la defensa; si crecen, se rotan con logrotate en el servidor | 12/11/2026 |
 
 ## Tomadas (heredadas de canal11-mail)
 
@@ -31,7 +35,7 @@ Lo que rige el código. Los análisis completos están en `../../docs/revision_g
 | D8 | Respuesta en HTML UTF-8 **codificado en base64**; asunto según RFC 2047; cabeceras `Date`, `Message-ID`, `In-Reply-To`, `References` y `Auto-Submitted: auto-replied` | SMTP limita las líneas a 998 caracteres; las tildes; el hilo de la conversación en Gmail; menos spam | 13/10/2026 |
 | D9 | Robustez: `try/catch` por correo y en el bucle; timeouts; reconexión a la BD; correos de más de 1 MB se descartan con respuesta; no se responde a robots ni a la propia cuenta; una sola copia (`FileChannel.tryLock`) | Cualquiera puede escribir al buzón; la app no se puede caer | 13/10/2026 |
 | D10 | Zona horaria `America/La_Paz` en la JVM, en la sesión de la BD y en un `Clock` inyectado | `CURRENT_DATE` y los choques de horario dependen de ella | 13/10/2026 |
-| D11 | Catálogo declarativo de comandos (`CommandSpec`), CRUD genérico para los comandos simples y handlers propios para los que tienen reglas | Son 58 comandos; menos código y menos errores | 13/10/2026 |
+| D11 | Catálogo declarativo de comandos (`CommandSpec`), CRUD genérico para los comandos simples y handlers propios para los que tienen reglas | Son 66 comandos; menos código y menos errores | 13/10/2026 |
 | D12 | La etapa `Ejecutar` abre y cierra la transacción; la etapa `Registrar` escribe la bitácora en otra transacción, siempre | Si el comando falla, igual queda registrado (R2) | 13/10/2026 |
 | D13 | Los errores de PostgreSQL pasan por `TraductorErrores` (nombre de la restricción → mensaje); nunca se reenvía el texto crudo | Mensajes claros (RNF-22) y no mostrar detalles internos | 13/10/2026 |
 | D14 | **El Jefe de Prensa redacta notas** (antes H3). Tiene ficha de personal con el cargo nuevo `jefe_prensa` y el permiso ENVNOT. Su nota sigue el mismo flujo que las demás: INSNOT → ENVNOT → APRNOT u OBSNOT | `nota.autor_id` exige una ficha de personal; así no cambia la tabla `nota` y el historial de revisión queda igual para todos | 13/10/2026 |
