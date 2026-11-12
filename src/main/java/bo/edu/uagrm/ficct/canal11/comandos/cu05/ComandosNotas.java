@@ -81,7 +81,19 @@ public final class ComandosNotas {
                         .ejemplo("APRNOT[\"3\"]").accion(ComandosNotas::aprnot).build(),
                 CommandSpec.de(CU, "OBSNOT", "Observar la nota con motivo")
                         .param("id", Tipo.ID).opcional("motivo", Tipo.texto(255))
-                        .ejemplo("OBSNOT[\"6\",\"Falta la versión de la Alcaldía\"]").accion(ComandosNotas::obsnot).build());
+                        .ejemplo("OBSNOT[\"6\",\"Falta la versión de la Alcaldía\"]").accion(ComandosNotas::obsnot).build(),
+                CommandSpec.de(CU, "LISMAT", "Material audiovisual de una nota")
+                        .param("filtro", Tipo.FILTRO)
+                        .ejemplo("LISMAT[\"pendiente\"]").accion(ComandosNotas::lismat).build(),
+                CommandSpec.de(CU, "INSMAT", "Registrar material")
+                        .param("id_nota", Tipo.ID).param("descripcion", Tipo.texto(200)).param("tipo", TIPO_MATERIAL)
+                        .opcional("duracion", Tipo.DURACION).opcional("ubicacion", Tipo.texto(255))
+                        .ejemplo("INSMAT[\"3\",\"Imágenes del acto\",\"video\",\"00:40\",\"/media/2026/autoridades.mxf\"]")
+                        .accion(ComandosNotas::insmat).build(),
+                CommandSpec.de(CU, "UPDMAT", "Actualizar estado y duración del material")
+                        .param("id", Tipo.ID).opcional("estado", ESTADO_MATERIAL).opcional("duracion", Tipo.DURACION)
+                        .opcional("ubicacion", Tipo.texto(255))
+                        .ejemplo("UPDMAT[\"2\",\"listo\",\"00:55\",\"/media/2026/paro_final.mxf\"]").accion(ComandosNotas::updmat).build());
     }
 
     // =================================================================== notas
@@ -322,6 +334,61 @@ public final class ComandosNotas {
             LEFT JOIN personal pe ON pe.id = m.editor_id
             LEFT JOIN usuario u ON u.id = pe.usuario_id
             """.formatted(Formato.mmss("m.duracion"));
+
+    private static Resultado lismat(Contexto ctx) throws SQLException, ErrorNegocio {
+        String filtro = ctx.p().texto("filtro");
+        if (filtro == null) {
+            return Resultado.listado("Material audiovisual", ctx.consultar(MATERIAL + " ORDER BY n.fecha DESC, n.slug, m.id"), "No hay material registrado.");
+        }
+        if (filtro.matches("\\d+")) {  // L5: un número es el id de la nota
+            int idNota = Integer.parseInt(filtro);
+            Fila n = ctx.requerir("SELECT slug FROM nota WHERE id = ?", idNota);
+            return Resultado.listado("Material de " + n.texto("slug"), ctx.consultar(MATERIAL + " WHERE m.nota_id = ? ORDER BY m.id", idNota),
+                    "La nota no tiene material registrado.");
+        }
+        String estado = Tipo.normalizarOpcion(filtro);
+        if (!ESTADOS_MATERIAL.contains(estado)) {
+            throw ErrorNegocio.de("indique \"*\", el id de una nota o un estado (" + String.join(", ", ESTADOS_MATERIAL) + "); llegó «" + filtro + "»");
+        }
+        return Resultado.listado("Material " + estado.replace('_', ' '),
+                ctx.consultar(MATERIAL + " WHERE m.estado = ? ORDER BY n.fecha DESC, n.slug, m.id", estado), "No hay material en ese estado.");
+    }
+
+    private static Resultado insmat(Contexto ctx) throws SQLException, ErrorNegocio {
+        Parametros p = ctx.p();
+        int idNota = p.entero("id_nota");
+        Fila n = ctx.requerir("SELECT estado FROM nota WHERE id = ?", idNota);
+        noCerrada(n.texto("estado"));
+        Map<String, Object> v = new LinkedHashMap<>();
+        v.put("nota_id", idNota);
+        v.put("descripcion", p.texto("descripcion"));
+        v.put("tipo", p.texto("tipo"));
+        v.put("duracion", p.tiene("duracion") ? p.entero("duracion") : 0);
+        v.put("ubicacion", p.texto("ubicacion"));
+        int id = TablaCrud.insertar(ctx.repositorio(), ctx.conexion(), "material_audiovisual", v);
+        return Resultado.exito("Material", "material registrado").ficha(ctx.requerir(MATERIAL + " WHERE m.id = ?", id))
+                .parrafo(duracionDeLaNota(ctx, idNota));
+    }
+
+    private static Resultado updmat(Contexto ctx) throws SQLException, ErrorNegocio {
+        Parametros p = ctx.p();
+        p.requerirAlguno("estado", "duracion", "ubicacion");
+        int id = p.entero("id");
+        Fila m = ctx.requerir("SELECT nota_id FROM material_audiovisual WHERE id = ?", id);
+        Map<String, Object> v = new LinkedHashMap<>();
+        v.put("estado", p.texto("estado"));
+        v.put("duracion", p.entero("duracion"));
+        v.put("ubicacion", p.texto("ubicacion"));
+        v.put("editor_id", ctx.remitente().personalId());
+        TablaCrud.actualizar(ctx.repositorio(), ctx.conexion(), "material_audiovisual", id, v);
+        return Resultado.exito("Material", "material actualizado").ficha(ctx.requerir(MATERIAL + " WHERE m.id = ?", id))
+                .parrafo(duracionDeLaNota(ctx, m.entero("nota_id")));
+    }
+
+    private static String duracionDeLaNota(Contexto ctx, int idNota) throws SQLException, ErrorNegocio {
+        Fila d = ctx.requerir("SELECT duracion_total FROM v_nota_duracion WHERE nota_id = ?", idNota);
+        return "Duración estimada de la nota: " + Formato.duracion(d.entero("duracion_total")) + " (R25).";
+    }
 
     // =================================================================== reglas comunes
 

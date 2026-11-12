@@ -170,4 +170,29 @@ class ComandosNotasTest {
         contiene(p.texto(JEFE_PRENSA, "DELNOT[\"1\"]"), "Error: la nota está en la escaleta 1: quítela antes con DELITE");
         contiene(p.texto(PERIODISTA, "DELNOT[\"7\"]"), "Error: solo el autor o el Jefe de Prensa pueden modificarla");
     }
+
+    // ------------------------------------------------------------------ material
+
+    @Test
+    void lismat() {
+        contiene(p.texto(EDITOR, "LISMAT[\"pendiente\"]"), "2 registros.", "Imágenes del acto");
+        contiene(p.texto(CAMAROGRAFO, "LISMAT[\"2\"]"), "Material de PARO-TRANSPORTE", "1 registro.", "00:55");
+        contiene(p.texto(EDITOR, "LISMAT[\"perdido\"]"), "Error: indique \"*\", el id de una nota o un estado");
+    }
+
+    @Test
+    void insmatSumaALaDuracionDeLaNota() {
+        contiene(p.texto(CAMAROGRAFO, "INSMAT[\"3\",\"Imágenes del acto\",\"video\",\"00:40\",\"/media/2026/autoridades.mxf\"]"),
+                "Éxito: material registrado correctamente", "pendiente", "Duración estimada de la nota");
+        contiene(p.texto(CAMAROGRAFO, "INSMAT[\"9\",\"Más imágenes\",\"video\",\"00:40\",\"\"]"), "Error: la nota está emitida: ya no se modifica");
+        contiene(p.texto(CAMAROGRAFO, "INSMAT[\"3\",\"Imágenes\",\"pelicula\",\"00:40\",\"\"]"), "Error: «tipo» debe ser video, sot, grafico, foto o audio");
+    }
+
+    @Test
+    void updmat() throws Exception {
+        contiene(p.texto(EDITOR, "UPDMAT[\"2\",\"listo\",\"00:55\",\"/media/2026/paro_final.mxf\"]"),
+                "Éxito: material actualizado correctamente", "listo", "/media/2026/paro_final.mxf", "Patricia Saucedo Melgar");
+        contiene(p.texto(PERIODISTA, "UPDMAT[\"2\",\"listo\",\"\",\"\"]"), "Error: no tiene permiso para ejecutar UPDMAT");
+        contiene(p.texto(EDITOR, "UPDMAT[\"99\",\"listo\",\"\",\"\"]"), "Error: el registro no existe");
+    }
 }
