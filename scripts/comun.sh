@@ -10,6 +10,8 @@
 CANAL11_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PID_FILE="$CANAL11_DIR/canal11.pid"
 LOG_APP="$CANAL11_DIR/logs/canal11.0.log"
+LOG_ACCESO="$CANAL11_DIR/logs/access.log"
+LOG_ERROR="$CANAL11_DIR/logs/error.log"
 LOG_CONSOLA="$CANAL11_DIR/logs/consola.log"
 
 # Jar: el del servidor o, si no está, el compilado en la PC.

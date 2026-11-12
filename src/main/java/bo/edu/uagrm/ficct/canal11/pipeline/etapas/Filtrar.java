@@ -2,6 +2,7 @@ package bo.edu.uagrm.ficct.canal11.pipeline.etapas;
 
 import bo.edu.uagrm.ficct.canal11.comandos.HTMLResponseBuilder;
 import bo.edu.uagrm.ficct.canal11.config.Config;
+import bo.edu.uagrm.ficct.canal11.config.Registro;
 import bo.edu.uagrm.ficct.canal11.pipeline.Etapa;
 import bo.edu.uagrm.ficct.canal11.pipeline.Pedido;
 
@@ -21,6 +22,7 @@ import java.util.logging.Logger;
 public final class Filtrar implements Etapa {
 
     private static final Logger LOG = Logger.getLogger(Filtrar.class.getName());
+    private static final Logger ACCESO = Logger.getLogger(Registro.ACCESO);
 
     private final String correoSistema;
     private final long maxBytes;
@@ -37,12 +39,12 @@ public final class Filtrar implements Etapa {
     @Override
     public void procesar(Pedido p) {
         if (p.automatico()) {
-            LOG.info("Se descarta un correo automático de «" + p.remitenteCorreo() + "» («" + p.asuntoVisible() + "»)");
+            ACCESO.info(p.remitenteCorreo() + " | - | Descartado | «" + p.asuntoVisible() + "» | correo automático o rebote");
             p.descartar();
             return;
         }
         if (p.remitenteCorreo().equals(correoSistema)) {
-            LOG.info("Se descarta un correo del propio sistema («" + p.asuntoVisible() + "»)");
+            ACCESO.info(p.remitenteCorreo() + " | - | Descartado | «" + p.asuntoVisible() + "» | correo del propio sistema");
             p.descartar();
             return;
         }

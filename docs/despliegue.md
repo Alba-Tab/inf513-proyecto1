@@ -114,7 +114,7 @@ scripts/run.sh
 scripts/estado.sh
 ```
 
-Muestra si está corriendo y las últimas líneas del log (`logs/canal11.0.log`). El log anota cada correo recibido y cada respuesta enviada, con las contraseñas enmascaradas.
+Muestra si está corriendo y las últimas líneas de los dos logs que pide la consigna: `logs/access.log`, con una línea por correo (remitente, comando, Éxito o Error, asunto y resumen), y `logs/error.log`, con las fallas y las excepciones. Las contraseñas van enmascaradas. El log completo, con todos los eventos, es `logs/canal11.0.log`.
 
 Si las dos pruebas responden bien, la versión queda lista para el tag `v0.1.0`.
 
@@ -195,7 +195,7 @@ Los scripts usan `canal11/jdk/bin/java` automáticamente. Para comprobarlo, volv
 ├── despliegue.md              esta guía
 ├── scripts/                   run, stop, estado, verificar-servidor, cargar-bd
 ├── db/                        script de la base, datos de prueba, consultas y pruebas
-├── logs/                      canal11.0.log (rota a 5 archivos de 5 MB) y consola.log
+├── logs/                      access.log, error.log, canal11.0.log (rota a 5 archivos de 5 MB) y consola.log
 ├── canal11.pid, canal11.lock  los manejan los scripts y la aplicación
 └── jdk/                       solo si se usó un Java portable
 ```
