@@ -55,6 +55,68 @@ El orden completo está en `Pipeline.completo(...)`. Cada etapa es una clase de 
 
 Los catálogos de apoyo (roles, turnos, tipos de recurso, plantillas y cortes) vienen cargados en `db/datos_prueba.sql`. El porqué de cada decisión está en [docs/DECISIONES.md](docs/DECISIONES.md).
 
+## Base de datos
+
+PostgreSQL, con **26 tablas** y 8 vistas. `db/script_db_grupo14sa.sql` crea todo (antes borra lo que haya) y `db/datos_prueba.sql` carga los roles, los permisos, los catálogos de apoyo y datos de ejemplo. En el servidor, `scripts/cargar-bd.sh` corre los dos. Todas las consultas del sistema usan `PreparedStatement`.
+
+| Caso de uso | Tablas |
+|---|---|
+| CU-01 Usuarios | `rol`, `usuario`, `permiso`, `rol_permiso` |
+| CU-02 Personal | `turno`, `personal`, `ausencia` |
+| CU-03 Recursos | `tipo_recurso`, `recurso`, `prestamo`, `mantenimiento` |
+| CU-04 Coberturas | `cobertura`, `cobertura_personal`, `cobertura_recurso` |
+| CU-05 Notas | `nota`, `nota_rotulo`, `nota_version`, `revision_nota`, `material_audiovisual` |
+| CU-06 Programación y escaleta | `programa`, `grilla`, `plantilla`, `plantilla_corte`, `escaleta`, `item_escaleta` |
+| Bitácora (RNF-24) | `bitacora_comando` |
+
+Vistas: `v_ocupacion_personal` y `v_ocupacion_recurso` (choques de horario), `v_nota_duracion` (duración estimada), `v_plantilla_bloque` y `v_plantilla_control` (bloques y control R18), `v_escaleta_grilla` y `v_bloque_balance` (tiempos de la escaleta) y `v_grilla_semanal`.
+
+Relaciones (cada tabla tiene `id` como clave primaria; las líneas son las claves foráneas):
+
+```mermaid
+erDiagram
+    rol ||--o{ usuario : asigna
+    rol ||--o{ rol_permiso : otorga
+    permiso ||--o{ rol_permiso : "se otorga en"
+    usuario ||--o| personal : "tiene ficha"
+    turno ||--o{ personal : "turno fijo"
+    personal ||--o{ ausencia : registra
+    tipo_recurso ||--o{ recurso : clasifica
+    recurso ||--o{ prestamo : "se entrega en"
+    personal ||--o{ prestamo : "es responsable de"
+    cobertura |o--o{ prestamo : motiva
+    recurso ||--o{ mantenimiento : registra
+    cobertura |o--o{ mantenimiento : "afecta a"
+    usuario |o--o{ mantenimiento : reporta
+    usuario ||--o{ cobertura : planifica
+    cobertura |o--o{ cobertura : "se reprograma en"
+    cobertura ||--o{ cobertura_personal : requiere
+    personal ||--o{ cobertura_personal : "participa en"
+    cobertura ||--o{ cobertura_recurso : reserva
+    recurso ||--o{ cobertura_recurso : "se reserva en"
+    cobertura |o--o{ nota : origina
+    personal ||--o{ nota : redacta
+    nota ||--o{ nota_rotulo : lleva
+    nota ||--o{ nota_version : guarda
+    usuario ||--o{ nota_version : edita
+    nota ||--o{ revision_nota : "se revisa en"
+    usuario ||--o{ revision_nota : revisa
+    nota ||--o{ material_audiovisual : tiene
+    personal |o--o{ material_audiovisual : edita
+    programa ||--o{ grilla : "sale en"
+    programa ||--o{ plantilla : "se arma con"
+    plantilla ||--o{ plantilla_corte : define
+    grilla ||--o{ escaleta : genera
+    plantilla ||--o{ escaleta : estructura
+    usuario ||--o{ escaleta : "es responsable de"
+    escaleta ||--o{ item_escaleta : contiene
+    nota |o--o{ item_escaleta : "se incluye como"
+    personal |o--o{ item_escaleta : presenta
+    usuario |o--o{ bitacora_comando : "envía"
+```
+
+El diseño conceptual (MER), el lógico y el físico, con todas las columnas y restricciones, están en la sección 3.2 del documento técnico.
+
 ## Requisitos
 
 | Herramienta | Para qué |
