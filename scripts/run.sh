@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =====================================================================
-# Arranca canal11-pipeline en segundo plano; sigue corriendo al cerrar el SSH.
+# Arranca inf513-proyecto1 en segundo plano; sigue corriendo al cerrar el SSH.
 #
 #   scripts/run.sh                 arranca (o avisa si ya está corriendo)
 #   scripts/run.sh --si-no-corre   para crontab: arranca solo si no está corriendo, sin mensajes
@@ -20,7 +20,7 @@ decir() { [ "$SILENCIOSO" -eq 1 ] || echo "$@"; }
 
 PID="$(pid_activo)"
 if [ -n "$PID" ]; then
-    decir "canal11-pipeline ya está corriendo (PID $PID)."
+    decir "inf513-proyecto1 ya está corriendo (PID $PID)."
     exit 0
 fi
 
@@ -29,7 +29,7 @@ JAVA="$(buscar_java)"
 CONFIG="${CANAL11_CONFIG:-$CANAL11_DIR/config.properties}"
 
 if [ -z "$JAR" ]; then
-    echo "Error: no se encontró canal11-pipeline.jar en $CANAL11_DIR (ni en target/)." >&2
+    echo "Error: no se encontró inf513-proyecto1.jar en $CANAL11_DIR (ni en target/)." >&2
     exit 1
 fi
 if [ -z "$JAVA" ]; then
@@ -56,10 +56,10 @@ echo $! >"$PID_FILE"
 sleep 3
 PID="$(pid_activo)"
 if [ -z "$PID" ]; then
-    echo "Error: canal11-pipeline no arrancó. Últimas líneas de $LOG_CONSOLA:" >&2
+    echo "Error: inf513-proyecto1 no arrancó. Últimas líneas de $LOG_CONSOLA:" >&2
     tail -n 15 "$LOG_CONSOLA" >&2
     rm -f "$PID_FILE"
     exit 1
 fi
-decir "canal11-pipeline iniciado (PID $PID) con $("$JAVA" -version 2>&1 | head -n 1)."
+decir "inf513-proyecto1 iniciado (PID $PID) con $("$JAVA" -version 2>&1 | head -n 1)."
 decir "Log: $LOG_APP    Estado: scripts/estado.sh    Detener: scripts/stop.sh"

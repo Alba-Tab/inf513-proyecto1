@@ -71,7 +71,7 @@ JAR="$(buscar_jar)"
 if [ "$JAVA_OK" -ne 1 ]; then
     aviso "se omite: primero hace falta Java 17"
 elif [ -z "$JAR" ]; then
-    mal "no está canal11-pipeline.jar en $CANAL11_DIR"
+    mal "no está inf513-proyecto1.jar en $CANAL11_DIR"
 elif [ ! -f "$CONFIG" ]; then
     mal "falta $CONFIG: copiar config.example.properties y completarlo (docs/despliegue.md, paso 3)"
 else
