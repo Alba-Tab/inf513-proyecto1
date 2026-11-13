@@ -1,4 +1,4 @@
-# canal11-pipeline
+# inf513-proyecto1
 
 Sistema de Gestión de Operaciones y Noticias del Canal 11 (TVU-UAGRM), operado por correo electrónico, con arquitectura de **tubería y filtros** (*pipes and filters*).
 Proyecto 1 de Tecnología Web (INF513) — Grupo 14 SA — Semestre II-2026.
@@ -180,7 +180,7 @@ Maven no hace falta: el repositorio trae el Maven Wrapper (`./mvnw`).
 ./mvnw verify
 ```
 
-Deja un solo jar con todo adentro en `target/canal11-pipeline.jar`.
+Deja un solo jar con todo adentro en `target/inf513-proyecto1.jar`.
 
 Las pruebas marcadas `@Tag("bd")` necesitan un PostgreSQL y se saltan solas si no lo hay. Para correrlas:
 
@@ -207,7 +207,7 @@ cp config.example.properties config.properties
 Completar `config.properties` con las contraseñas del buzón y de la base de datos. No se versiona; en el servidor, darle permisos `600`.
 
 ```bash
-java -Duser.timezone=America/La_Paz -jar target/canal11-pipeline.jar config.properties
+java -Duser.timezone=America/La_Paz -jar target/inf513-proyecto1.jar config.properties
 ```
 
 Corre una sola copia (bloqueo en `canal11.lock`). Se detiene con Ctrl+C o `kill`: termina el correo en curso y envía las respuestas pendientes.
@@ -245,7 +245,7 @@ En la carpeta `logs/`:
 ## Estructura
 
 ```
-canal11-pipeline/
+inf513-proyecto1/
 ├── docs/              decisiones y guía de despliegue
 ├── db/                script de la BD, datos de prueba, consultas y pruebas de integridad
 ├── scripts/           subir, verificar el servidor, cargar la BD, arrancar, detener y ver el estado

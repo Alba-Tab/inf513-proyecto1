@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # =====================================================================
-# Funciones comunes de los scripts de canal11-pipeline. No se ejecuta solo:
+# Funciones comunes de los scripts de inf513-proyecto1. No se ejecuta solo:
 # lo incluyen los demás con «. "$(dirname "$0")/comun.sh"».
 # Compatible con bash 3.2 (macOS) y bash 4/5 (Linux).
 # =====================================================================
 
-# Carpeta de la aplicación: en el servidor, la que tiene canal11-pipeline.jar;
+# Carpeta de la aplicación: en el servidor, la que tiene inf513-proyecto1.jar;
 # en la PC, la raíz del repositorio (el jar está en target/).
 CANAL11_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PID_FILE="$CANAL11_DIR/canal11.pid"
@@ -16,10 +16,10 @@ LOG_CONSOLA="$CANAL11_DIR/logs/consola.log"
 
 # Jar: el del servidor o, si no está, el compilado en la PC.
 buscar_jar() {
-    if [ -f "$CANAL11_DIR/canal11-pipeline.jar" ]; then
-        echo "$CANAL11_DIR/canal11-pipeline.jar"
-    elif [ -f "$CANAL11_DIR/target/canal11-pipeline.jar" ]; then
-        echo "$CANAL11_DIR/target/canal11-pipeline.jar"
+    if [ -f "$CANAL11_DIR/inf513-proyecto1.jar" ]; then
+        echo "$CANAL11_DIR/inf513-proyecto1.jar"
+    elif [ -f "$CANAL11_DIR/target/inf513-proyecto1.jar" ]; then
+        echo "$CANAL11_DIR/target/inf513-proyecto1.jar"
     fi
 }
 

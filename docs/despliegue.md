@@ -24,14 +24,14 @@ Resumen:
 
 ## 2. Subir desde la PC
 
-Desde la carpeta `canal11-pipeline/`:
+Desde la carpeta `inf513-proyecto1/`:
 
 ```bash
 scripts/subir.sh grupo14sa@www.tecnoweb.org.bo
 ```
 
 - Si el usuario de SSH no es `grupo14sa`, cambiarlo en ese comando.
-- Corre las pruebas, compila y sube a `~/canal11/` el jar, los scripts, la base y esta guía. Pide la contraseña de SSH en cada paso.
+- Corre las pruebas, compila y sube a `~/inf513-proyecto1/` el jar, los scripts, la base y esta guía. Pide la contraseña de SSH en cada paso.
 - **Nunca sube `config.properties`**: ese archivo se crea en el servidor.
 - Para ver los comandos sin ejecutarlos, agregar `--simular` antes del destino.
 - Si el nombre `www.tecnoweb.org.bo` no se encuentra (el DNS de tecnoweb falla a ratos), usar su IP. Se obtiene con `dig @8.8.8.8 www.tecnoweb.org.bo`; el 13/10/2026 era `139.99.68.169`.
@@ -43,7 +43,7 @@ ssh grupo14sa@www.tecnoweb.org.bo
 ```
 
 ```bash
-cd canal11 && cp config.example.properties config.properties && chmod 600 config.properties && nano config.properties
+cd inf513-proyecto1 && cp config.example.properties config.properties && chmod 600 config.properties && nano config.properties
 ```
 
 Completar `pop3.contrasena`, `bd.usuario` y `bd.contrasena`. El resto ya trae los valores del servidor (`localhost`). El permiso `600` impide que otros grupos del servidor lean las contraseñas.
@@ -70,7 +70,7 @@ No borra correos ni envía nada: la prueba de envío se corta antes de `DATA`. C
 | Rechaza enviar a … (Relaying denied) | El servidor exige autenticarse: hay que hacer la rama `feat/smtp-cram-md5` antes de seguir. Avisar en el grupo |
 | El buzón tiene N correos | Al arrancar se van a procesar (y borrar). Si son pruebas viejas, conviene vaciarlo antes |
 
-El mismo chequeo se puede correr solo: `java -jar canal11-pipeline.jar --verificar config.properties su.correo@gmail.com`.
+El mismo chequeo se puede correr solo: `java -jar inf513-proyecto1.jar --verificar config.properties su.correo@gmail.com`.
 
 ## 5. Cargar la base de datos
 
@@ -83,7 +83,7 @@ scripts/cargar-bd.sh
 ⚠️ Es para la **primera carga**. Una vez que el sistema está en uso, volver a correrlo borra la bitácora y los correos reales de los usuarios. Si de verdad hay que recargar, respaldar antes:
 
 ```bash
-pg_dump -Fc -h localhost -U grupo14sa db_grupo14sa > ~/canal11/respaldo-$(date +%Y%m%d-%H%M).dump
+pg_dump -Fc -h localhost -U grupo14sa db_grupo14sa > ~/inf513-proyecto1/respaldo-$(date +%Y%m%d-%H%M).dump
 ```
 
 Después, poner los correos reales del grupo: el sistema reconoce a cada usuario por su remitente. Como mínimo, un usuario por integrante:
@@ -123,8 +123,8 @@ Si las dos pruebas responden bien, la versión queda lista para el tag `v0.1.0`.
 `run.sh` la deja en segundo plano: sigue corriendo al cerrar el SSH. Para que vuelva a arrancar si reinician el servidor (o si se cae), agregar dos líneas con `crontab -e`:
 
 ```
-*/5 * * * * $HOME/canal11/scripts/run.sh --si-no-corre
-@reboot $HOME/canal11/scripts/run.sh --si-no-corre
+*/5 * * * * $HOME/inf513-proyecto1/scripts/run.sh --si-no-corre
+@reboot $HOME/inf513-proyecto1/scripts/run.sh --si-no-corre
 ```
 
 `--si-no-corre` no hace nada si ya está corriendo. Además, la aplicación nunca corre dos veces: tiene su propio bloqueo.
@@ -140,7 +140,7 @@ Termina el correo en curso, envía las respuestas pendientes y anota «Aplicaci�
 Para subir una versión nueva, **primero detenerla**: `subir.sh` reemplaza el jar en el mismo lugar, y la aplicación encendida lo sigue leyendo mientras corre (puede fallar en medio de un correo). Desde la PC, en este orden:
 
 ```bash
-ssh grupo14sa@www.tecnoweb.org.bo "cd canal11 && scripts/stop.sh"
+ssh grupo14sa@www.tecnoweb.org.bo "cd inf513-proyecto1 && scripts/stop.sh"
 ```
 
 ```bash
@@ -148,7 +148,7 @@ scripts/subir.sh grupo14sa@www.tecnoweb.org.bo
 ```
 
 ```bash
-ssh grupo14sa@www.tecnoweb.org.bo "cd canal11 && scripts/run.sh"
+ssh grupo14sa@www.tecnoweb.org.bo "cd inf513-proyecto1 && scripts/run.sh"
 ```
 
 Si el crontab de la sección 7 está activo, puede volver a arrancarla antes de que termine la subida: hacer los tres pasos seguidos (el cron revisa cada 5 minutos). El mensaje final de `subir.sh` todavía propone detener después de subir; se corrige en una rama `chore/` (revisión del 14/10, A6).
@@ -161,13 +161,13 @@ Sin permisos de administrador se puede usar un JDK copiado en la carpeta de la a
 2. Subirlo:
 
    ```bash
-   scp OpenJDK17U-jre_x64_linux_*.tar.gz grupo14sa@www.tecnoweb.org.bo:canal11/
+   scp OpenJDK17U-jre_x64_linux_*.tar.gz grupo14sa@www.tecnoweb.org.bo:inf513-proyecto1/
    ```
 
 3. En el servidor, descomprimirlo como `canal11/jdk`:
 
    ```bash
-   cd canal11 && mkdir jdk && tar -xzf OpenJDK17U-jre_x64_linux_*.tar.gz -C jdk --strip-components=1 && rm OpenJDK17U-jre_*.tar.gz
+   cd inf513-proyecto1 && mkdir jdk && tar -xzf OpenJDK17U-jre_x64_linux_*.tar.gz -C jdk --strip-components=1 && rm OpenJDK17U-jre_*.tar.gz
    ```
 
 Los scripts usan `canal11/jdk/bin/java` automáticamente. Para comprobarlo, volver a correr `verificar-servidor.sh`.
@@ -188,8 +188,8 @@ Los scripts usan `canal11/jdk/bin/java` automáticamente. Para comprobarlo, volv
 ## 11. Qué queda en el servidor
 
 ```
-~/canal11/
-├── canal11-pipeline.jar
+~/inf513-proyecto1/
+├── inf513-proyecto1.jar
 ├── config.properties          contraseñas (permiso 600, nunca en git)
 ├── config.example.properties  plantilla
 ├── despliegue.md              esta guía
