@@ -102,6 +102,7 @@ public final class App {
 
     private static void ejecutar(Config config) throws InterruptedException {
         LOG.info("Canal 11 vía correo: " + config.resumen());
+        LOG.info("Listo. Envíe un correo a " + config.correoSistema() + " con un comando en el asunto (AYUDA muestra los disponibles).");
         Clock reloj = Clock.system(config.zonaHoraria());
         DBConnection db = new DBConnection(config);
         Repositorio repositorio = new Repositorio(config.timeoutSegundos());

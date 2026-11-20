@@ -1,13 +1,16 @@
 package bo.edu.uagrm.ficct.canal11.config;
 
+import java.io.FileDescriptor;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.text.Normalizer;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.logging.ConsoleHandler;
 import java.util.logging.FileHandler;
 import java.util.logging.Formatter;
 import java.util.logging.Handler;
@@ -15,6 +18,7 @@ import java.util.logging.Level;
 import java.util.logging.LogManager;
 import java.util.logging.LogRecord;
 import java.util.logging.Logger;
+import java.util.logging.StreamHandler;
 
 /**
  * Configura el log de la aplicación: una línea por evento, en la consola y en
@@ -37,10 +41,41 @@ public final class Registro {
         quitarHandlers(raiz);
         raiz.setUseParentHandlers(false);
         raiz.setLevel(Level.INFO);
-        Handler consola = new ConsoleHandler();
-        consola.setFormatter(new FormatoLinea(zona));
-        consola.setLevel(Level.ALL);
-        raiz.addHandler(consola);
+        raiz.addHandler(consola(zona));
+    }
+
+    /**
+     * Consola legible: una columna de hora, una etiqueta (RECIBIDO, OK, ERROR, ENVIADO...) y el
+     * detalle. Sale en ASCII puro (sin tildes), porque la consola de Windows usa una codificación
+     * distinta de la de Java y las tildes salen rotas; los archivos de log sí llevan UTF-8 completo.
+     */
+    private static Handler consola(ZoneId zona) {
+        PrintStream salida = new PrintStream(new FileOutputStream(FileDescriptor.out), true, StandardCharsets.US_ASCII);
+        StreamHandler h = new StreamHandler(salida, new FormatoConsola(zona)) {
+            @Override
+            public synchronized void publish(LogRecord r) {
+                super.publish(r);
+                flush();
+            }
+
+            @Override
+            public synchronized void close() {
+                flush(); // no cierra la salida estándar
+            }
+        };
+        h.setLevel(Level.ALL);
+        return h;
+    }
+
+    /** Quita tildes y reemplaza lo que no sea ASCII, para que la consola nunca muestre símbolos raros. */
+    static String aAscii(String t) {
+        String s = Normalizer.normalize(t, Normalizer.Form.NFD).replaceAll("\\p{M}+", "");
+        s = s.replace('«', '"').replace('»', '"').replace('–', '-').replace('—', '-').replace('…', '.');
+        StringBuilder sb = new StringBuilder(s.length());
+        for (char c : s.toCharArray()) {
+            sb.append(c < 128 ? c : '?');
+        }
+        return sb.toString();
     }
 
     /**
@@ -144,6 +179,65 @@ public final class Registro {
                 for (StackTraceElement e : t.getStackTrace()) {
                     sb.append("        at ").append(e).append(System.lineSeparator());
                 }
+            }
+            return sb.toString();
+        }
+    }
+
+    /**
+     * Formato de la consola, pensado para quien la mira en vivo:
+     * <pre>
+     * 00:30:16  RECIBIDO   orientecampeon43@gmail.com   lisusu
+     * 00:30:19  OK         orientecampeon43@gmail.com   LISUSU   15 registros.
+     * 00:30:24  ENVIADO    orientecampeon43@gmail.com   Re: lisusu
+     * </pre>
+     * Los archivos de log conservan el formato completo de {@link FormatoLinea}.
+     */
+    static final class FormatoConsola extends Formatter {
+        private final DateTimeFormatter hora;
+
+        FormatoConsola(ZoneId zona) {
+            this.hora = DateTimeFormatter.ofPattern("HH:mm:ss").withZone(zona);
+        }
+
+        @Override
+        public String format(LogRecord r) {
+            String origen = r.getLoggerName() == null ? "" : r.getLoggerName().substring(r.getLoggerName().lastIndexOf('.') + 1);
+            String texto = formatMessage(r);
+            String etiqueta;
+            String detalle;
+            if (ACCESO.equals(r.getLoggerName())) {
+                String[] c = texto.split(" \\| ", 5);
+                if (c.length == 5) {
+                    etiqueta = switch (c[2]) {
+                        case "Éxito" -> "OK";
+                        case "Descartado" -> "DESCARTE";
+                        default -> "ERROR";
+                    };
+                    detalle = String.format("%-30s %-8s %s", c[0], c[1], c[4]);
+                } else {
+                    etiqueta = "CORREO";
+                    detalle = texto;
+                }
+            } else if (origen.equals("Filtrar") && texto.startsWith("Correo de ")) {
+                etiqueta = "RECIBIDO";
+                int dos = texto.indexOf(": ");
+                detalle = dos < 0 ? texto : String.format("%-30s %s", texto.substring(10, dos), texto.substring(dos + 2));
+            } else if (origen.equals("SendEmailThread") && texto.startsWith("Respuesta enviada a ")) {
+                etiqueta = "ENVIADO";
+                int par = texto.indexOf(" («");
+                detalle = par < 0 ? texto.substring(20)
+                        : String.format("%-30s %s", texto.substring(20, par), texto.substring(par + 3, texto.length() - 2));
+            } else {
+                etiqueta = r.getLevel() == Level.SEVERE ? "FALLO" : r.getLevel() == Level.WARNING ? "AVISO" : "INFO";
+                detalle = texto;
+            }
+            StringBuilder sb = new StringBuilder()
+                    .append(hora.format(Instant.ofEpochMilli(r.getMillis())))
+                    .append("  ").append(String.format("%-9s", etiqueta)).append("  ")
+                    .append(aAscii(detalle)).append(System.lineSeparator());
+            if (r.getThrown() != null) {
+                sb.append("           ").append(aAscii(String.valueOf(r.getThrown()))).append(System.lineSeparator());
             }
             return sb.toString();
         }

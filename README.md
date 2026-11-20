@@ -46,7 +46,7 @@ Es el mismo flujo de la consigna: recepción, parser y validador, negocio y base
 
 ```mermaid
 flowchart TD
-    A([Llega un correo a grupo14sa@tecnoweb.org.bo]) --> B["Leer el buzón por POP3 cada 30 s (MailVerificationThread)"]
+    A([Llega un correo a grupo14sa@tecnoweb.org.bo]) --> B["Leer el buzón por POP3 cada 10 s (MailVerificationThread)"]
     B --> C["Decodificar el MIME: UTF-8 y asuntos RFC 2047"]
     C --> D{"¿Automático, rebote o del propio sistema?"}
     D -- sí --> D1[Anotar el descarte en access.log] --> Z1([Fin, sin respuesta])

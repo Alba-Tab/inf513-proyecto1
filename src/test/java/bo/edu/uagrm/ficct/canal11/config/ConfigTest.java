@@ -34,7 +34,7 @@ class ConfigTest {
         Config c = Config.desde(minimas());
         assertEquals(110, c.pop3Puerto());
         assertEquals(25, c.smtpPuerto());
-        assertEquals(30, c.intervaloSegundos());
+        assertEquals(10, c.intervaloSegundos());
         assertEquals(1_048_576, c.maxBytesCorreo());
         assertEquals(ZoneId.of("America/La_Paz"), c.zonaHoraria());
         assertEquals(Path.of("canal11.lock"), c.archivoBloqueo());

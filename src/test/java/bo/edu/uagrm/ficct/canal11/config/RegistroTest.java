@@ -11,6 +11,7 @@ import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -49,5 +50,33 @@ class RegistroTest {
             raiz.setUseParentHandlers(padres);
             raiz.setLevel(nivel);
         }
+    }
+
+    /** La consola muestra una etiqueta, el remitente, el comando y el resumen, sin las comillas «». */
+    @Test
+    void consolaOrdenada() {
+        Registro.FormatoConsola f = new Registro.FormatoConsola(ZoneId.of("America/La_Paz"));
+        java.util.logging.LogRecord ok = new java.util.logging.LogRecord(Level.INFO,
+                "ana@gmail.com | LISUSU | Éxito | «lisusu» | 15 registros.");
+        ok.setLoggerName(Registro.ACCESO);
+        String linea = f.format(ok);
+        assertTrue(linea.contains("OK") && linea.contains("ana@gmail.com") && linea.contains("LISUSU")
+                && linea.contains("15 registros."), linea);
+        assertFalse(linea.contains("«") || linea.contains("|"), linea);
+
+        java.util.logging.LogRecord rec = new java.util.logging.LogRecord(Level.INFO, "Correo de ana@gmail.com: «lisusu»");
+        rec.setLoggerName("bo.edu.uagrm.ficct.canal11.pipeline.etapas.Filtrar");
+        assertTrue(f.format(rec).contains("RECIBIDO") && f.format(rec).contains("lisusu"), f.format(rec));
+
+        java.util.logging.LogRecord env = new java.util.logging.LogRecord(Level.INFO, "Respuesta enviada a ana@gmail.com («Re: lisusu»)");
+        env.setLoggerName("bo.edu.uagrm.ficct.canal11.pipeline.SendEmailThread");
+        String e = f.format(env);
+        assertTrue(e.contains("ENVIADO") && e.contains("ana@gmail.com") && e.contains("Re: lisusu"), e);
+    }
+
+    /** La consola no muestra tildes ni símbolos raros, para que se lea igual en cualquier terminal. */
+    @Test
+    void consolaSoloAscii() {
+        assertEquals("Hola, Americo Claros: \"Exito\" - ok.", Registro.aAscii("Hola, Américo Claros: «Éxito» – ok…"));
     }
 }

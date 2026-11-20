@@ -46,7 +46,7 @@ public final class Config {
         bdUrl = requerido(p, "bd.url");
         bdUsuario = requerido(p, "bd.usuario");
         bdContrasena = requerido(p, "bd.contrasena");
-        intervaloSegundos = entero(p, "app.intervalo_segundos", 30);
+        intervaloSegundos = entero(p, "app.intervalo_segundos", 10);
         maxBytesCorreo = entero(p, "app.max_bytes_correo", 1_048_576);
         timeoutSegundos = entero(p, "app.timeout_segundos", 30);
         zonaHoraria = ZoneId.of(opcional(p, "app.zona_horaria", "America/La_Paz"));
