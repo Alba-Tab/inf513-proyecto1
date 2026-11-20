@@ -5,11 +5,11 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>bo.edu.uagrm.ficct</groupId>
-    <artifactId>canal11-pipeline</artifactId>
+    <artifactId>inf513-proyecto1</artifactId>
     <version>0.1.0-SNAPSHOT</version>
     <packaging>jar</packaging>
 
-    <name>canal11-pipeline</name>
+    <name>inf513-proyecto1</name>
     <description>Sistema de Gestión de Operaciones y Noticias del Canal 11 (TVU-UAGRM) vía correo electrónico, con arquitectura de tubería y filtros</description>
 
     <properties>
@@ -45,8 +45,8 @@
     </dependencies>
 
     <build>
-        <!-- target/canal11-pipeline.jar: un solo jar con el driver y bcrypt adentro -->
-        <finalName>canal11-pipeline</finalName>
+        <!-- target/inf513-proyecto1.jar: un solo jar con el driver y bcrypt adentro -->
+        <finalName>inf513-proyecto1</finalName>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
